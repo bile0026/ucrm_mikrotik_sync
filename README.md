@@ -51,4 +51,4 @@ burstThresholdDownload = 0.95
 3. Setup a cron job or however you'd like to run this.
 
 
-* Note: Please do your own testing and validation of this script
+* Note: Please do your own testing and validation of this script. There is no guarantee that this script won't break your setup. Please open issues or PR's if you have issues or fixes.
