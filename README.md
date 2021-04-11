@@ -3,8 +3,13 @@ Sync services and clients to MikroTik simple queues
 
 Create Simple Queues on a MikroTik Router from UNMS/UCRM information.
 
-Current Issues:
+# Current Issues:
 1. SSL not yet working. Testing on 6.47.9. Haven't found a working combo of SSL options yet.
+
+# If things aren't working
+1. Check to make sure api is enabled in `/ip/services`
+2. Make sure you allow connections in your firewall from the IP your using to run the sync job (keep in mind this might be a public IP if you are running this remotely).
+3. Double check your api keys and FQDNs to make sure they are correct. Don't add things like `http://` 
 
 # HOW-TO
 1. Install requirements.txt `pip3 install -r requirements.txt`
