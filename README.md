@@ -10,10 +10,10 @@ Current Issues:
 1. Install requirements.txt `pip3 install -r requirements.txt`
 2. Create an .ini file in the same directory as the `ucrm_api.py` script with this format and name it `ucrm_api.ini`.
 ```
-[UCRM]
+[UISP]
 server_fqdn = <your_ucrm_server_fqdn>
 key = <your_ucrm_api_key>
-api_version = v1.0
+ucrm_api_version = v1.0
 unms_api_version = v2.1
 
 [MIKROTIK]
