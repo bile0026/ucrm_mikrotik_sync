@@ -8,7 +8,7 @@ Current Issues:
 
 # HOW-TO
 1. Install requirements.txt `pip3 install -r requirements.txt`
-2. Create an .ini file in the same directory as the `ucrm_api.py` script with this format.
+2. Create an .ini file in the same directory as the `ucrm_api.py` script with this format and name it `ucrm_api.ini`.
 ```
 [UCRM]
 server_fqdn = <your_ucrm_server_fqdn>
