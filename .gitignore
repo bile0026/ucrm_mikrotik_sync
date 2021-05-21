@@ -1,5 +1,6 @@
 # exclude testing/working documents
 working_docs
+ucrm_api.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
