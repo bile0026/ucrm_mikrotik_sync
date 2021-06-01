@@ -7,9 +7,15 @@ Create Simple Queues on a MikroTik Router from UNMS/UCRM information.
 1. SSL not yet working. Testing on 6.47.9. Haven't found a working combo of SSL options yet.
 
 # If things aren't working
-1. Check to make sure api is enabled in `/ip/services`
+1. Check to make sure api is enabled on the router in `/ip/services`
 2. Make sure you allow connections in your firewall from the IP your using to run the sync job (keep in mind this might be a public IP if you are running this remotely).
 3. Double check your api keys and FQDNs to make sure they are correct. Don't add things like `http://` 
+
+# Notes on Setup
+  1. Make sure to assign gateway router to a site
+  2. Set the router's IP address (reachable by UISP/this script). Script will use the first/primary IP to try and connect to the router.
+  3. Set the routers role to "router" in UISP
+  4. Assign client sites to site properly. (data links). If data links aren't created, queues won't be able to be created since there's no way to tell which parent (gateway) site a device belongs to.
 
 # HOW-TO
 1. Install requirements.txt `pip3 install -r requirements.txt`
