@@ -1,5 +1,6 @@
 # exclude testing/working documents
-working_docs
+working_docs/*.json
+working_docs/*.md
 ucrm_api.ini
 
 # Byte-compiled / optimized / DLL files
