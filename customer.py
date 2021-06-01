@@ -101,3 +101,11 @@ def getClientDevice(siteId):
         return device.json()[0]
     else:
         return "No client device found" + device.status_code
+
+
+def getAllClients():
+    clients = requests.get(clients_url, headers=unms_headers)
+    if clients.status_code == 200:
+        return clients.json()
+    else:
+        return "No clients found" + clients.status_code

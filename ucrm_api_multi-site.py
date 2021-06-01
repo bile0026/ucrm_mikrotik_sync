@@ -8,7 +8,6 @@ from configparser import ConfigParser
 # define variables
 customer_list = []
 
-
 # import config from .ini
 config = ConfigParser()
 config.read("ucrm_api.ini")
@@ -16,7 +15,6 @@ uisp_config = config['UISP']
 mikrotik_config = config['MIKROTIK']
 
 # build variables
-
 base_url = 'https://' + uisp_config['server_fqdn']
 
 # urls to retrieve ucrm client information
