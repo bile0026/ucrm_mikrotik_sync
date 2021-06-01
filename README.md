@@ -3,6 +3,8 @@ Sync services and clients to MikroTik simple queues
 
 Create Simple Queues on a MikroTik Router from UNMS/UCRM information.
 
+If you have a simple network, you can use `ucrm_api.py` to create single queues on a single gateway router. If you have a more complex network, `ucrm_api_multi-site.py` builds out a list of parent/child sites and places queues on the respective gateway routers. In order for multi-site to work you have to build the data links in UCRM between client sites and "tower" sites, and setup your routers as "tower" sites with IP addresses. Also requires a shared API credential on all "tower" routers for the API to make the updates.
+
 # Current Issues:
 1. SSL not yet working. Testing on 6.47.9. Haven't found a working combo of SSL options yet.
 
