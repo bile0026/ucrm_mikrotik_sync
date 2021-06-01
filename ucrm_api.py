@@ -156,11 +156,11 @@ def removeQueue(queues, queue_id):
 def cleanupQueues(queues, services):
     all_queues = queues.get()
     queue_names = list(dict([(d['id'], d['name'])
-                       for d in all_queues]).values())
+                             for d in all_queues]).values())
     queue_ids = list(dict([(d['id'], d['name'])
                            for d in all_queues]).keys())
     service_names = list(dict([(d['serviceId'], d['queueName'])
-                         for d in services]).values())
+                               for d in services]).values())
     for queue in queue_names:
         if queue in service_names:
             print("Service exists, continuing...", queue)
@@ -231,7 +231,7 @@ for service in clientServicePlans:
 # for item in services:
 #     print(item)
 
-# FIXME #1
+# FIXME #1 - Get SSL Working
 # router_connection = routeros_api.RouterOsApiPool(
 #     str(mikrotik_config['router']),
 #     username=str(mikrotik_config['username']),
