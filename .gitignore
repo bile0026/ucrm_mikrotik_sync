@@ -3,6 +3,7 @@ working_docs/*.json
 working_docs/*.md
 working_docs/test_json.py
 ucrm_api.ini
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
