@@ -64,7 +64,7 @@ def getSite(siteId):
 def getClientDevice(siteId):
     device = requests.get(devices_url + '?siteId=' +
                           siteId, headers=unms_headers)
-    if device.status_code == 200:
+    if device.status_code == 200 and len(device.json()[0]) > 0:
         return device.json()[0]
     else:
         return "No client device found" + device.status_code
@@ -92,32 +92,50 @@ class Customer():
             customer.get('id')).get('id'))
         self.customerSiteId = getClientServicePlan(
             customer.get('id')).get('unmsClientSiteId')
-        self.maxLimitUpload = str(getSite(
-            self.customerSiteId)['qos']['uploadSpeed'])
-        self.maxLimitDownload = str(getSite(
-            self.customerSiteId)['qos']['downloadSpeed'])
-        self.burstLimitUpload = str(
-            int(self.maxLimitUpload) * (1 + float(mikrotik_config['burstLimitUpload'])))
-        self.burstLimitDownload = str(
-            int(self.maxLimitDownload) * (1 + float(mikrotik_config['burstLimitDownload'])))
-        self.burstThresholdUpload = str(
-            int(self.maxLimitUpload) * (float(mikrotik_config['burstThresholdUpload'])))
-        self.burstThresholdDownload = str(
-            int(self.maxLimitDownload) * (float(mikrotik_config['burstThresholdDownload'])))
-        self.queueName = ((self.customerFirstName) + " " +
-                          (self.customerLastName) + " - " + "Service Id: " + str(self.serviceId))
-        self.customerDeviceIp = getClientDevice(self.customerSiteId)[
-            'ipAddress'].split('/', 1)[0]
-        if getSite(self.customerSiteId)['identification']['parent']:
-            self.gatewaySiteId = getSite(self.customerSiteId)[
-                'identification']['parent']['id']
-            self.gatewayRouterIp = getSite(self.gatewaySiteId)[
-                'description']['ipAddresses'][0].split('/', 1)[0]
-            self.siteType = 'Child'
+        if self.serviceStatus == 1 or self.serviceStatus == 3:
+            self.maxLimitUpload = str(getSite(
+                self.customerSiteId)['qos']['uploadSpeed'])
+            self.maxLimitDownload = str(getSite(
+                self.customerSiteId)['qos']['downloadSpeed'])
+            self.burstLimitUpload = str(
+                int(self.maxLimitUpload) * (1 + float(mikrotik_config['burstLimitUpload'])))
+            self.burstLimitDownload = str(
+                int(self.maxLimitDownload) * (1 + float(mikrotik_config['burstLimitDownload'])))
+            self.burstThresholdUpload = str(
+                int(self.maxLimitUpload) * (float(mikrotik_config['burstThresholdUpload'])))
+            self.burstThresholdDownload = str(
+                int(self.maxLimitDownload) * (float(mikrotik_config['burstThresholdDownload'])))
+            self.queueName = ((self.customerFirstName) + " " +
+                              (self.customerLastName) + " - " + "Service Id: " + str(self.serviceId))
+            self.customerDeviceIp = getClientDevice(self.customerSiteId)[
+                'ipAddress'].split('/', 1)[0]
+            if getSite(self.customerSiteId)['identification']['parent']:
+                self.gatewaySiteId = getSite(self.customerSiteId)[
+                    'identification']['parent']['id']
+                self.gatewayRouterIp = getSite(self.gatewaySiteId)[
+                    'description']['ipAddresses'][0].split('/', 1)[0]
+                self.siteType = 'Child'
+            else:
+                self.gatewaySiteId = None
+                self.gatewayRouterIP = None
+                self.siteType = 'Parent'
         else:
-            self.gatewaySiteId = None
-            self.gatewayRouterIP = None
-            self.siteType = 'Parent'
+            self.maxLimitUpload = 0
+            self.maxLimitDownload = 0
+            self.burstLimitUpload = 0
+            self.burstLimitDownload = 0
+            self.burstThresholdUpload = 0
+            self.burstThresholdDownload = 0
+            self.queueName = ((self.customerFirstName) + " " +
+                              (self.customerLastName) + " - " + "Service Id: " + str(self.serviceId))
+            self.customerDeviceIp = getClientDevice(self.customerSiteId)[
+                'ipAddress'].split('/', 1)[0]
+            if getSite(self.customerSiteId)['identification']['parent']:
+                self.gatewaySiteId = getSite(self.customerSiteId)[
+                    'identification']['parent']['id']
+                self.gatewayRouterIp = getSite(self.gatewaySiteId)[
+                    'description']['ipAddresses'][0].split('/', 1)[0]
+                self.siteType = 'Child'
 
 
 customers = getAllClients()
@@ -173,6 +191,14 @@ def getCustomerNameFromSite(customer_dict, client_services_dict, site_id):
 
 
 # methods for interacting with MikroTik Queues
+
+# returns yes or no whether queue is disabled
+def getQueueDisabledStatus(customer):
+    if customer.serviceStatus == 1:
+        return "no"
+    else:
+        return "yes"
+
 # disables a given queue on a router
 
 
@@ -224,7 +250,7 @@ def getQueueID(queues, name):
 
 def addQueue(queues, customer):
     queues.add(
-        name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
+        name=customer.queueName, disabled=getQueueDisabledStatus(customer), target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
         "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
         burst_threshold=customer.burstThresholdUpload +
         "/"+customer.burstLimitDownload,
@@ -238,26 +264,16 @@ def addQueue(queues, customer):
 def setQueue(queues, customer):
     # queues = queues.get()
     set_queue = getQueue(queues, customer.queueName)
-    if customer.serviceStatus == 1:
-        queues.set(
-            id=set_queue['id'], disabled="no", name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
-            "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
-            burst_threshold=customer.burstThresholdUpload +
-            "/"+customer.burstLimitDownload,
-            burst_time=mikrotik_config['burstTimeUp'] +
-            "s/"+mikrotik_config['burstTimeDown']+"s"
-        )
-        print("Set queue for", customer.queueName)
-    else:
-        queues.set(
-            id=set_queue['id'], disabled="yes", name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
-            "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
-            burst_threshold=customer.burstThresholdUpload +
-            "/"+customer.burstLimitDownload,
-            burst_time=mikrotik_config['burstTimeUp'] +
-            "s/"+mikrotik_config['burstTimeDown']+"s"
-        )
-        print("Disable queue for", customer.queueName)
+    queues.set(
+        id=set_queue['id'], disabled=getQueueDisabledStatus(customer), name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
+        "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
+        burst_threshold=customer.burstThresholdUpload +
+        "/"+customer.burstLimitDownload,
+        burst_time=mikrotik_config['burstTimeUp'] +
+        "s/"+mikrotik_config['burstTimeDown']+"s"
+    )
+    print("Set queue for", customer.queueName,
+          " Disabled? -", getQueueDisabledStatus(customer))
 
 # remove a queue from the router based on the queuename
 
@@ -330,8 +346,10 @@ for customer in customer_list:
             try:
                 # if customer service is ended, remove queue
                 if customer.serviceStatus == 2:
+
+                    list_queues = api.get_resource('/queue/simple')
+
                     if getQueue(list_queues, customer.queueName):
-                        list_queues = api.get_resource('/queue/simple')
                         removeQueue(list_queues, getQueueID(
                             list_queues, customer.queueName))
                     else:
