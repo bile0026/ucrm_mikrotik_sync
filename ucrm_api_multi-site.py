@@ -106,7 +106,7 @@ class Customer():
             int(self.maxLimitDownload) * (float(mikrotik_config['burstThresholdDownload'])))
         self.queueName = ((self.customerFirstName) + " " +
                           (self.customerLastName) + " - " + "Service Id: " + str(self.serviceId))
-        self.customerDeviceIP = getClientDevice(self.customerSiteId)[
+        self.customerDeviceIp = getClientDevice(self.customerSiteId)[
             'ipAddress'].split('/', 1)[0]
         if getSite(self.customerSiteId)['identification']['parent']:
             self.gatewaySiteId = getSite(self.customerSiteId)[
@@ -230,6 +230,7 @@ def addQueue(queues, customer):
         "/"+customer.burstLimitDownload,
         burst_time=mikrotik_config['burstTimeUp']+"s/"+mikrotik_config['burstTimeDown']+"s", place_before=mikrotik_config['catch_all_queue']
     )
+    print("Add new queue for", customer.queueName)
 
 # set all configuration for a given queue
 
@@ -239,22 +240,24 @@ def setQueue(queues, customer):
     set_queue = getQueue(queues, customer.queueName)
     if customer.serviceStatus == 1:
         queues.set(
-            id=set_queue['id'], disabled="no", name=customer.queueName, target=customer.cutsomerDeviceI, max_limit=customer.maxLimitUpload +
+            id=set_queue['id'], disabled="no", name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
             "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
             burst_threshold=customer.burstThresholdUpload +
             "/"+customer.burstLimitDownload,
             burst_time=mikrotik_config['burstTimeUp'] +
             "s/"+mikrotik_config['burstTimeDown']+"s"
         )
+        print("Set queue for", customer.queueName)
     else:
         queues.set(
-            id=set_queue['id'], disabled="yes", name=customer.queueName, target=customer.cutsomerDeviceI, max_limit=customer.maxLimitUpload +
+            id=set_queue['id'], disabled="yes", name=customer.queueName, target=customer.customerDeviceIp, max_limit=customer.maxLimitUpload +
             "/"+customer.maxLimitDownload, burst_limit=customer.burstLimitUpload+"/"+customer.burstLimitDownload,
             burst_threshold=customer.burstThresholdUpload +
             "/"+customer.burstLimitDownload,
             burst_time=mikrotik_config['burstTimeUp'] +
             "s/"+mikrotik_config['burstTimeDown']+"s"
         )
+        print("Disable queue for", customer.queueName)
 
 # remove a queue from the router based on the queuename
 
@@ -270,14 +273,18 @@ def removeQueue(queues, queue_id):
 # checks for queues that no longer have services and removes the queues
 
 
-def cleanupQueues(queues, services):
+def cleanupQueues(queues, customer_list):
+    service_names = list(str())
     all_queues = queues.get()
     queue_names = list(dict([(d['id'], d['name'])
                              for d in all_queues]).values())
     queue_ids = list(dict([(d['id'], d['name'])
                            for d in all_queues]).keys())
-    service_names = list(dict([(d['serviceId'], d['queueName'])
-                               for d in services]).values())
+
+    # build list of service_names
+    for customer in customer_list:
+        service_names.append(customer.queueName)
+
     for queue in queue_names:
         if queue in service_names:
             print("Service exists, continuing...", queue)
@@ -289,50 +296,65 @@ def cleanupQueues(queues, services):
             print("Service does not exist, remove Queue", queue)
             removeQueue(queues, getQueueID(queues, queue))
         else:
-            print("Service does not exist, remove Queue", queue)
+            print("Can't find service, remove Queue", queue)
             removeQueue(queues, queue)
 
 
 for customer in customer_list:
-    # apply queues for each customer to the proper router based on parent/child
+    if customer.customerDeviceIp:
+        # apply queues for each customer to the proper router based on parent/child
 
-    # FIXME #1 - Get SSL Working
-    # router_connection = routeros_api.RouterOsApiPool(
-    #     str(mikrotik_config['router']),
-    #     username=str(mikrotik_config['username']),
-    #     password=str(mikrotik_config['password']),
-    #     port=int(mikrotik_config['port']),
-    #     use_ssl=str(mikrotik_config['use_ssl']),
-    #     ssl_verify=str(mikrotik_config['ssl_verify']),
-    #     ssl_verify_hostname=str(mikrotik_config['ssl_verify_hostname']),
-    #     plaintext_login=str(mikrotik_config['plaintext_login'])
-    # )
+        # FIXME #1 - Get SSL Working
+        # router_connection = routeros_api.RouterOsApiPool(
+        #     str(mikrotik_config['router']),
+        #     username=str(mikrotik_config['username']),
+        #     password=str(mikrotik_config['password']),
+        #     port=int(mikrotik_config['port']),
+        #     use_ssl=str(mikrotik_config['use_ssl']),
+        #     ssl_verify=str(mikrotik_config['ssl_verify']),
+        #     ssl_verify_hostname=str(mikrotik_config['ssl_verify_hostname']),
+        #     plaintext_login=str(mikrotik_config['plaintext_login'])
+        # )
 
-    router_connection = routeros_api.RouterOsApiPool(
-        customer.gatewayRouterIp,
-        username=mikrotik_config['username'],
-        password=mikrotik_config['password'],
-        port=int(mikrotik_config['port']),
-        plaintext_login=mikrotik_config['plaintext_login']
-    )
+        router_connection = routeros_api.RouterOsApiPool(
+            customer.gatewayRouterIp,
+            username=mikrotik_config['username'],
+            password=mikrotik_config['password'],
+            port=int(mikrotik_config['port']),
+            plaintext_login=mikrotik_config['plaintext_login']
+        )
 
-    # connect to the router and attempt to create the queues
-    try:
-        api = router_connection.get_api()
+        # connect to the router and attempt to create the queues
         try:
-            list_queues = api.get_resource('/queue/simple')
-            # all_queues = list_queues.get()
-            if getQueue(list_queues, customer.queueName):
-                setQueue(list_queues, customer)
-            else:
-                addQueue(list_queues, customer)
+            api = router_connection.get_api()
+            try:
+                # if customer service is ended, remove queue
+                if customer.serviceStatus == 2:
+                    if getQueue(list_queues, customer.queueName):
+                        list_queues = api.get_resource('/queue/simple')
+                        removeQueue(list_queues, getQueueID(
+                            list_queues, customer.queueName))
+                    else:
+                        print("Queue for", customer.queueName,
+                              "not found, can't delete...")
+                # if customer service is any other status, activate or suspend as set in UCRM
+                else:
+                    list_queues = api.get_resource('/queue/simple')
+                    # all_queues = list_queues.get()
+                    if getQueue(list_queues, customer.queueName):
+                        setQueue(list_queues, customer)
+                    else:
+                        addQueue(list_queues, customer)
 
-            # cleanup queues and remove queues that no longer have a service attached
-            cleanupQueues(list_queues, services)
-        except routeros_api.exceptions.RouterOsApiCommunicationError:
-            print(mikrotik_config['router'] + '  comms error')
+                # cleanup queues and remove queues that no longer have a service attached
+                # FIXME #2 - Move cleanup outside customer queue process so it's only done once
+                cleanupQueues(list_queues, customer_list)
+            except routeros_api.exceptions.RouterOsApiCommunicationError:
+                print(mikrotik_config['router'] + '  comms error')
 
-        router_connection.disconnect()
+            router_connection.disconnect()
 
-    except routeros_api.exceptions.RouterOsApiConnectionError:
-        print(mikrotik_config['router'] + '  NOT done')
+        except routeros_api.exceptions.RouterOsApiConnectionError:
+            print(mikrotik_config['router'] + '  NOT done')
+    else:
+        print("Customer does not yet have a device with an IP address")
