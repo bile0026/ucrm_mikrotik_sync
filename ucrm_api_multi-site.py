@@ -320,7 +320,7 @@ for customer in customer_list:
     if customer.customerDeviceIp:
         # apply queues for each customer to the proper router based on parent/child
 
-        # FIXME #1 - Get SSL Working
+        # FIXME #2 - Get SSL Working
         # router_connection = routeros_api.RouterOsApiPool(
         #     str(mikrotik_config['router']),
         #     username=str(mikrotik_config['username']),
@@ -365,7 +365,7 @@ for customer in customer_list:
                         addQueue(list_queues, customer)
 
                 # cleanup queues and remove queues that no longer have a service attached
-                # FIXME #2 - Move cleanup outside customer queue process so it's only done once
+                # FIXME #1 - Move cleanup outside customer queue process so it's only done once
                 cleanupQueues(list_queues, customer_list)
             except routeros_api.exceptions.RouterOsApiCommunicationError:
                 print(mikrotik_config['router'] + '  comms error')
