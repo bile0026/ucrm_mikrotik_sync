@@ -11,7 +11,7 @@ If you have a simple network, you can use `ucrm_api.py` to create single queues 
 # If things aren't working
 1. Check to make sure api is enabled on the router in `/ip/services`
 2. Make sure you allow connections in your firewall from the IP your using to run the sync job (keep in mind this might be a public IP if you are running this remotely).
-3. Double check your api keys and FQDNs to make sure they are correct. Don't add things like `http://` 
+3. Double check your api keys and FQDNs to make sure they are correct. Don't add things like `http://`
 
 # Notes on Setup
   1. Make sure to assign gateway router to a site
