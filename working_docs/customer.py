@@ -3,6 +3,12 @@ import requests
 from configparser import ConfigParser
 from requests.api import head, request
 
+# import config from .ini
+config = ConfigParser()
+config.read("ucrm_api.ini")
+uisp_config = config['UISP']
+mikrotik_config = config['MIKROTIK']
+
 # build variables
 
 base_url = 'https://' + uisp_config['server_fqdn']
@@ -62,13 +68,13 @@ def getClientDevice(siteId):
 
 
 def getAllClients():
-    clients = requests.get(clients_url, headers=unms_headers)
+    clients = requests.get(clients_url, headers=ucrm_headers)
     if clients.status_code == 200:
         return clients.json()
     else:
         return "No clients found" + clients.status_code
 
-# custom customer class to store custome information
+# custom customer class to store customer information
 
 
 class Customer():
