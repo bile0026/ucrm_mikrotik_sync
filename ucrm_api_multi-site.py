@@ -39,6 +39,7 @@ customer_list = []
 tower_site_ids = []
 customer_site_ids = []
 router_dict = {}
+tower_router_list = []
 
 # methods for interacting with customers
 
@@ -318,6 +319,10 @@ def cleanupQueues(queues, customer_list):
 
 for customer in customer_list:
     if customer.customerDeviceIp:
+        # build router list for queue cleanup
+        if customer.gatewayRouterIp not in tower_router_list:
+            tower_router_list.append(customer.gatewayRouterIp)
+
         # apply queues for each customer to the proper router based on parent/child
 
         # FIXME #2 - Get SSL Working
@@ -364,9 +369,6 @@ for customer in customer_list:
                     else:
                         addQueue(list_queues, customer)
 
-                # cleanup queues and remove queues that no longer have a service attached
-                # FIXME #1 - Move cleanup outside customer queue process so it's only done once
-                cleanupQueues(list_queues, customer_list)
             except routeros_api.exceptions.RouterOsApiCommunicationError:
                 print(mikrotik_config['router'] + '  comms error')
 
@@ -376,3 +378,27 @@ for customer in customer_list:
             print(mikrotik_config['router'] + '  NOT done')
     else:
         print("Customer does not yet have a device with an IP address")
+
+print("Gateway routers", tower_router_list)
+
+for router_ip in tower_router_list:
+    print("Starting queue cleanup on", router_ip)
+
+    router_connection = routeros_api.RouterOsApiPool(
+        router_ip,
+        username=mikrotik_config['username'],
+        password=mikrotik_config['password'],
+        port=int(mikrotik_config['port']),
+        plaintext_login=mikrotik_config['plaintext_login']
+    )
+
+    # connect to the router and attempt to cleanup queues
+    try:
+        api = router_connection.get_api()
+
+        list_queues = api.get_resource('/queue/simple')
+
+        cleanupQueues(list_queues, customer_list)
+
+    except routeros_api.exceptions.RouterOsApiConnectionError:
+        print(mikrotik_config['router'] + '  NOT done')
